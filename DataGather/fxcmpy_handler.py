@@ -1,8 +1,10 @@
 ### fxcmpy_handler ###
 ## connectd to fxcmpy demo account and fetches data ##
+import private
+
 
 # your token here #
-TOKEN = 0
+TOKEN = private.token
 # your token here #
 
 colums = ['bidopen', 'bidclose', 'bidhigh', 'bidlow', 'tickqty']
@@ -24,7 +26,7 @@ def get_market(con, quantity,clean=True):
     data_init = ticks(con, instrument=instruments[0], number=quantity)
     # hkg33, cryptomajor
     data_init = data_init.rename(columns={'bidopen': 'bidopen' + instruments[0],
-                      'bidclose': 'bidopen' + instruments[0],
+                      'bidclose': 'bidclose' + instruments[0],
                       'bidhigh': 'bidhigh' + instruments[0],
                       'bidlow': 'bidlow' + instruments[0],
                       'tickqty': 'tickqty' + instruments[0]})
