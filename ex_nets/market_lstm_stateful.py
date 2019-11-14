@@ -3,7 +3,7 @@ import pandas as pd
 from DataProcess import wrangle as wr
 from DataProcess import datasets as ds
 
-from Networks import lstm as l
+from Networks import lstm_stateful as l
 
 
 data_raw = pd.read_csv('fxcm_all_10k.csv',index_col='date')
