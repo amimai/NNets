@@ -7,6 +7,15 @@ import numpy as np
 def to_dataset(data):
     return data.loc[:,data.columns].values
 
+def to_series(data,lookback):
+    values = to_dataset(data)
+    t = []
+    for i in range(len(values)-lookback):
+            t.append(values[i:i+lookback])
+    return np.array(t)
+
+
+
 # give random train test and val dataset in tuples #
 def random_TTV(data, truth, pTest, pVal):
     total = len(data)
