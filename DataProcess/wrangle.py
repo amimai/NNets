@@ -11,10 +11,25 @@ def filter(data,key):
         if each.find(key)!=-1: filtered.append(each)
     return data[filtered]
 
+# select only specific columns #
+def get_cols(df,key_list):
+    cols = []
+    for each in df.columns:
+        for key in key_list:
+            if each.find(key) != -1: cols.append(each)
+    return cols
+
 # differance dataset #
 def differance(data):
     ret = data.diff()
     ret = ret.iloc[1:,] # drop first row of NaN
+    return ret
+
+# differance by precentages
+def p_diff(data):
+    ret = data.diff()
+    ret = ret/data
+    ret = ret.iloc[1:, ]
     return ret
 
 # normalize #

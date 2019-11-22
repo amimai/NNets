@@ -14,8 +14,6 @@ def to_series(data,lookback):
             t.append(values[i:i+lookback])
     return np.array(t)
 
-
-
 # give random train test and val dataset in tuples #
 def random_TTV(data, truth, pTest, pVal):
     total = len(data)
@@ -33,3 +31,4 @@ def seq_stateful(data, truth, pTest, pVal):
     return ((data[test + val:], truth[test + val:]),
             (data[val:test + val], truth[val:test + val]),
             (data[:val], truth[:val]))
+
