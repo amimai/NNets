@@ -7,16 +7,18 @@ from keras.layers import Concatenate
 
 
 # use do to instantiate layers #
+# allows models to be procedurally generated #
 def do(func,*arg,**args):
     return func(*arg,**args)
 
 
 # use do2 models to recursively build models #
 # allows construction of models, and models made out of models
+# sample tescode #
 def do2(array):
     return do(array[0],array[1],**array[2])
 
-
+# given a set of layers or models returns a stacked model
 def make(layers,input_shape):
     input = Input(**input_shape)
     if layers[0][1] is None and layers[0][2] is None: layer = layers[0][0](input)
@@ -27,6 +29,51 @@ def make(layers,input_shape):
             else: layer = do(layers[i][0],layers[i][1],**layers[i][2])(layer)
     return Model(inputs=input, outputs=layer)
 
+# given a set of layers returns a deep net
+def make_deepnet(layers, shape, nodes, depth):
+    # print (shape)
+    _input = Input(shape=(shape,))
+    _stacks = [_input]
+    _concat = _input
+    for i in range(depth):
+        for n in range(len(layers)):
+            if n==0:
+                _layer = do(layers[n][0],layers[n][1],**layers[n][2])(_concat)
+            else :
+                _layer = do(layers[n][0], layers[n][1], **layers[n][2])(_layer)
+        _stacks.append(_layer)
+        _concat = Concatenate()(_stacks)
+    return Model(inputs=_input, outputs=_layer)
+
+def make_LSTMdeepnet(layers, shape, nodes, depth):
+    # print (shape)
+    _input = Input(shape=shape)
+    _stacks = [_input]
+    _concat = _input
+    for i in range(depth):
+        for n in range(len(layers)):
+            if n==0:
+                _layer = do(layers[n][0],layers[n][1],**layers[n][2])(_concat)
+            else :
+                _layer = do(layers[n][0], layers[n][1], **layers[n][2])(_layer)
+        _stacks.append(_layer)
+        _concat = Concatenate()(_stacks)
+    return Model(inputs=_input, outputs=_layer)
+
+def make_stateLSTMdeepnet(layers, shape, nodes, depth):
+    # print (shape)
+    _input = Input(batch_shape=shape)
+    _stacks = [_input]
+    _concat = _input
+    for i in range(depth):
+        for n in range(len(layers)):
+            if n==0:
+                _layer = do(layers[n][0],layers[n][1],**layers[n][2])(_concat)
+            else :
+                _layer = do(layers[n][0], layers[n][1], **layers[n][2])(_layer)
+        _stacks.append(_layer)
+        _concat = Concatenate()(_stacks)
+    return Model(inputs=_input, outputs=_layer)
 
 # testing implementation #
 '''
