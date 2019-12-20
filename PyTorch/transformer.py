@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# look at https://github.com/huggingface/transformers/blob/master/transformers/modeling_gpt2.py
+
 class TransformerModel(nn.Module):
 
     def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
@@ -11,10 +13,11 @@ class TransformerModel(nn.Module):
         self.model_type = 'Transformer'
         self.src_mask = None
         self.pos_encoder = PositionalEncoding(ninp, dropout)
-        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
-        self.encoder = nn.Embedding(ntoken, ninp)
-        self.ninp = ninp
+        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout) # nhead = number of encoding heads, nhid = number of nodes in layers
+        # encoder payers take in input and return same size output with opinions
+        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers) #nlayers = number of encoder sub layers
+        self.encoder = nn.Embedding(ntoken, ninp) # words in dict
+        self.ninp = ninp #dimentions in encoding
         self.decoder = nn.Linear(ninp, ntoken)
 
         self.init_weights()
@@ -36,10 +39,10 @@ class TransformerModel(nn.Module):
             mask = self._generate_square_subsequent_mask(len(src)).to(device)
             self.src_mask = mask
 
-        src = self.encoder(src) * math.sqrt(self.ninp)
-        src = self.pos_encoder(src)
-        output = self.transformer_encoder(src, self.src_mask)
-        output = self.decoder(output)
+        src = self.encoder(src) * math.sqrt(self.ninp) #embedding
+        src = self.pos_encoder(src) #positional encoding
+        output = self.transformer_encoder(src, self.src_mask) # multihead attn + feed forward
+        output = self.decoder(output) # takes in attention outputs, onehot
         return output
 
 class PositionalEncoding(nn.Module):
