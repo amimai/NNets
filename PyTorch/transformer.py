@@ -20,7 +20,7 @@ class TransformerModel(nn.Module):
         self.ninp = ninp #dimentions in encoding
         self.decoder = nn.Linear(ninp, ntoken)
 
-        self.init_weights()
+        self.init_weights()#
 
     def _generate_square_subsequent_mask(self, sz):
         mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
