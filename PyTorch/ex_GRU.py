@@ -48,7 +48,7 @@ for file in os.listdir(data_dir):
     label_scalers[file] = label_sc
 
     # Define lookback period and split inputs/labels
-    lookback = 9
+    lookback = 90
     inputs = np.zeros((len(data) - lookback, lookback, df.shape[1]))
     labels = np.zeros(len(data) - lookback)
 
@@ -71,16 +71,13 @@ for file in os.listdir(data_dir):
 
 batch_size = 1024
 train_data = TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
-train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
+train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True, num_workers=8)
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
 
 # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class GRUNet(nn.Module):
@@ -136,6 +133,13 @@ def train(train_loader, learn_rate, hidden_dim=256, EPOCHS=5, model_type="GRU"):
         model = GRUNet(input_dim, hidden_dim, output_dim, n_layers)
     else:
         model = LSTMNet(input_dim, hidden_dim, output_dim, n_layers)
+
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        model = nn.DataParallel(model, device_ids=[0])
+        # max batdch size config = [0,0,1] [bs=11000] , max speed config = 0,0,0,1 bs = [3000]
+
     model.to(device)
 
     # Defining loss function and optimizer
@@ -148,7 +152,7 @@ def train(train_loader, learn_rate, hidden_dim=256, EPOCHS=5, model_type="GRU"):
     # Start training loop
     for epoch in range(1, EPOCHS + 1):
         start_time = time.clock()
-        h = model.init_hidden(batch_size)
+        h = model.module.init_hidden(batch_size) # add .module for dataparallele to reach model original inside
         avg_loss = 0.
         counter = 0
         for x, label in train_loader:
@@ -184,7 +188,7 @@ def evaluate(model, test_x, test_y, label_scalers):
     for i in test_x.keys():
         inp = torch.from_numpy(np.array(test_x[i]))
         labs = torch.from_numpy(np.array(test_y[i]))
-        h = model.init_hidden(inp.shape[0])
+        h = model.module.init_hidden(inp.shape[0])
         out, h = model(inp.to(device).float(), h)
         outputs.append(label_scalers[i].inverse_transform(out.cpu().detach().numpy()).reshape(-1))
         targets.append(label_scalers[i].inverse_transform(labs.numpy()).reshape(-1))
@@ -195,14 +199,25 @@ def evaluate(model, test_x, test_y, label_scalers):
     print("sMAPE: {}%".format(sMAPE * 100))
     return outputs, targets, sMAPE
 
-lr = 0.001
-gru_model = train(train_loader, lr, model_type="GRU")
-Lstm_model = train(train_loader, lr, model_type="LSTM")
 
-print ('gru')
-gru_outputs, targets, gru_sMAPE = evaluate(gru_model, test_x, test_y, label_scalers)
-print ('lstm')
-lstm_outputs, targets, lstm_sMAPE = evaluate(Lstm_model, test_x, test_y, label_scalers)
+lr = 0.001
+def trainer():
+    gru_model = train(train_loader, lr, model_type="GRU")
+    Lstm_model = train(train_loader, lr, model_type="LSTM")
+    return gru_model,Lstm_model
+# gru_model,Lstm_model = ex_GRU.trainer()
+# ex_GRU.showme(gru_model,Lstm_model)
+
+def showme(gru_model,Lstm_model):
+
+    print ('gru')
+    gru_outputs, targets, gru_sMAPE = evaluate(gru_model, test_x, test_y, label_scalers)
+    print ('lstm')
+    lstm_outputs, targets, lstm_sMAPE = evaluate(Lstm_model, test_x, test_y, label_scalers)
+
+    return gru_outputs, targets, gru_sMAPE, lstm_outputs, targets, lstm_sMAPE
+
+#gru_outputs, targets, gru_sMAPE, lstm_outputs, targets, lstm_sMAPE = ex_GRU.showme(gru_model,Lstm_model)
 
 plt.figure(figsize=(14,10))
 plt.subplot(2,2,1)
