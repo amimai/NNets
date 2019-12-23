@@ -1,26 +1,24 @@
 # import the necessary packages
+import matplotlib
 from matplotlib import pyplot as plt
 import cv2
 
-import matplotlib
+def main():
+    # load the image, convert it to grayscale, and show it
+    image = cv2.imread('PyTorch/raptors.jpg')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # construct a grayscale histogram
+    hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
 
-# load the image, convert it to grayscale, and show it
-image = cv2.imread('PyTorch/raptors.jpg')
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-cv2.imshow("Image", image)
-cv2.imshow("Gray", gray)
-cv2.waitKey(0)
+    # plot the histogram
+    plt.figure()
+    plt.title("Grayscale Histogram")
+    plt.xlabel("Bins")
+    plt.ylabel("# of Pixels")
+    plt.plot(hist)
+    plt.xlim([0, 256])
+    plt.show()
 
-# construct a grayscale histogram
-hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-
-# plot the histogram
-plt.figure()
-plt.title("Grayscale Histogram")
-plt.xlabel("Bins")
-plt.ylabel("# of Pixels")
-plt.plot(hist)
-plt.xlim([0, 256])
-plt.show(block=True)
-cv2.waitKey(0)
+if __name__== '__main__':
+    main()

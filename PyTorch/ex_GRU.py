@@ -25,7 +25,7 @@ train_x = []
 test_x = {}
 test_y = {}
 
-for file in os.listdir(data_dir):
+for file in os.listdir(data_dir)[:4]:
     # Skipping the files we're not using
     if file[-4:] != ".csv" or file == "pjm_hourly_est.csv":
         continue
@@ -69,7 +69,7 @@ for file in os.listdir(data_dir):
     test_x[file] = (inputs[-test_portion:])
     test_y[file] = (labels[-test_portion:])
 
-batch_size = 1024
+batch_size = 1200
 train_data = TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
 train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True, num_workers=8)
 
@@ -97,7 +97,7 @@ class GRUNet(nn.Module):
 
     def init_hidden(self, batch_size):
         weight = next(self.parameters()).data
-        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().to(device)
+        hidden = weight.new(int(self.n_layers*3), int(batch_size/3), self.hidden_dim).zero_().to(device)
         return hidden
 
 
@@ -137,7 +137,7 @@ def train(train_loader, learn_rate, hidden_dim=256, EPOCHS=5, model_type="GRU"):
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        model = nn.DataParallel(model, device_ids=[0])
+        model = nn.DataParallel(model, device_ids=[0, 0, 1])
         # max batdch size config = [0,0,1] [bs=11000] , max speed config = 0,0,0,1 bs = [3000]
 
     model.to(device)
@@ -213,38 +213,40 @@ def showme(gru_model,Lstm_model):
     print ('gru')
     gru_outputs, targets, gru_sMAPE = evaluate(gru_model, test_x, test_y, label_scalers)
     print ('lstm')
-    lstm_outputs, targets, lstm_sMAPE = evaluate(Lstm_model, test_x, test_y, label_scalers)
+    lstm_outputs, targets2, lstm_sMAPE = evaluate(Lstm_model, test_x, test_y, label_scalers)
 
-    return gru_outputs, targets, gru_sMAPE, lstm_outputs, targets, lstm_sMAPE
+    plt.figure(figsize=(14,10))
+    plt.subplot(2,2,1)
+    plt.plot(gru_outputs[0][-100:], "-o", color="g", label="Predicted")
+    plt.plot(targets[0][-100:], color="b", label="Actual")
+    plt.ylabel('Energy Consumption (MW)')
+    plt.legend()
 
-#gru_outputs, targets, gru_sMAPE, lstm_outputs, targets, lstm_sMAPE = ex_GRU.showme(gru_model,Lstm_model)
+    plt.subplot(2,2,2)
+    plt.plot(gru_outputs[8][-50:], "-o", color="g", label="Predicted")
+    plt.plot(targets[8][-50:], color="b", label="Actual")
+    plt.ylabel('Energy Consumption (MW)')
+    plt.legend()
 
-plt.figure(figsize=(14,10))
-plt.subplot(2,2,1)
-plt.plot(gru_outputs[0][-100:], "-o", color="g", label="Predicted")
-plt.plot(targets[0][-100:], color="b", label="Actual")
-plt.ylabel('Energy Consumption (MW)')
-plt.legend()
+    plt.subplot(2,2,3)
+    plt.plot(gru_outputs[4][:50], "-o", color="g", label="Predicted")
+    plt.plot(targets[4][:50], color="b", label="Actual")
+    plt.ylabel('Energy Consumption (MW)')
+    plt.legend()
 
-plt.subplot(2,2,2)
-plt.plot(gru_outputs[8][-50:], "-o", color="g", label="Predicted")
-plt.plot(targets[8][-50:], color="b", label="Actual")
-plt.ylabel('Energy Consumption (MW)')
-plt.legend()
+    plt.subplot(2,2,4)
+    plt.plot(lstm_outputs[6][:100], "-o", color="g", label="Predicted")
+    plt.plot(targets[6][:100], color="b", label="Actual")
+    plt.ylabel('Energy Consumption (MW)')
+    plt.legend()
+    plt.show()
 
-plt.subplot(2,2,3)
-plt.plot(gru_outputs[4][:50], "-o", color="g", label="Predicted")
-plt.plot(targets[4][:50], color="b", label="Actual")
-plt.ylabel('Energy Consumption (MW)')
-plt.legend()
+def main():
+    gru_model, Lstm_model = trainer()
+    showme(gru_model,Lstm_model)
 
-plt.subplot(2,2,4)
-plt.plot(lstm_outputs[6][:100], "-o", color="g", label="Predicted")
-plt.plot(targets[6][:100], color="b", label="Actual")
-plt.ylabel('Energy Consumption (MW)')
-plt.legend()
-plt.show()
-
+if __name__== '__main__':
+    main()
 
 
 
