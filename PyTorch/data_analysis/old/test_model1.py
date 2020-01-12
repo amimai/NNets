@@ -14,11 +14,12 @@ from torch.utils.data import TensorDataset, DataLoader
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-batch_size=24000
+batch_size=300
 learn_rate=1e-3
 hidden_dim=2**5
 EPOCHS=50
 n_layers = 1
+output_dim = 168
 
 
 file_data='PyTorch/data/Finance_4b_4f/d_msd.csv'
@@ -52,14 +53,27 @@ class GRUNet(nn.Module):
         self.n_layers = n_layers
         self.GPUs = GPUs
 
-        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True,
+        self.gru1 = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True,
                           dropout=drop_prob)
-        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.gru2 = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True,
+                          dropout=drop_prob)
+        self.gru3 = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True,
+                          dropout=drop_prob)
+
+        self.fc1 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, output_dim)
         self.relu = nn.ReLU()
 
     def forward(self, x, h):
-        out, h = self.gru(x, h)
-        out = self.fc(self.relu(out[:, -1]))
+        #print('x0 ',x.shape) #torch.Size([100, 12, 168])
+        #print('h0 ',h.shape) #torch.Size([1, 100, 32])
+        out, h = self.gru1(x, h)
+        #print('out ', out.shape) #torch.Size([100, 12, 32])
+        #print('h0 out0 ', h.shape) #torch.Size([1, 100, 32])
+        #print('fc1 ', out[:, -1].shape)#torch.Size([100, 32])
+        out = self.fc3(self.relu(out[:, -1]))
+        #print('feed ', out.shape) #torch.Size([100, 168])
         return out, h
 
     def init_hidden(self, batch_size):
@@ -74,7 +88,7 @@ def train(train_loader, learn_rate, hidden_dim=256, n_layers = 2, EPOCHS=5):
     print(next(iter(train_loader))[0][0].shape)
     print(next(iter(train_loader))[0][0].shape[1])
     input_dim = next(iter(train_loader))[0][0].shape[1]
-    output_dim = 1
+
 
     # Instantiating the models
     model = GRUNet(input_dim, hidden_dim, output_dim, n_layers, GPUs=3)

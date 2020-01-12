@@ -1,6 +1,5 @@
 ### fxcmpy_handler ###
 ## connectd to fxcmpy demo account and fetches data ##
-import private
 import datetime as dt
 import time
 
@@ -9,7 +8,7 @@ import time
 # import numpy as np
 
 # your token here #
-TOKEN = private.token
+TOKEN = None
 # your token here #
 
 colums = ['bidopen', 'bidclose', 'bidhigh', 'bidlow', 'tickqty']

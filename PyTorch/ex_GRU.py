@@ -22,6 +22,7 @@ pd.read_csv(data_dir + 'AEP_hourly.csv').head()
 label_scalers = {}
 
 train_x = []
+train_y = []
 test_x = {}
 test_y = {}
 

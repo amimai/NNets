@@ -18,6 +18,14 @@ from keras.utils import Sequence
 
 from callbacks.CosHot import CosHotRestart
 
+import keras
+import tensorflow as tf
+
+
+config = tf.ConfigProto( device_count = {'GPU': 2 , 'CPU': 8} )
+sess = tf.Session(config=config)
+keras.backend.set_session(sess)
+
 # get our massive dataset for 72 instruments #
 data = pd.read_csv('all_data_223k_3y_m5.csv', index_col='date')
 
@@ -218,7 +226,7 @@ if __name__ == '__main__':
         lr = 1*10**-4
         model = makeme()
         hist.append(train(model,optimizer=optimizers.sgd(learning_rate=lr, momentum=0.9, nesterov=True), epochs=epoch,
-                          callbacks=[CosHotRestart(nb_epochs=epoch,nb_cycles=epoch//10,Pgain=1.1,LRgain=.8,verbose=2, valweight=False)]))
+                          callbacks=[CosHotRestart(nb_epochs=epoch,nb_cycles=epoch//10,Pgain=1.1,LRgain=.8,verbose=1, valweight=False)]))
 
     # iterative long range prediction model #
     filename = 'ep-123_0.4204-0.3279'

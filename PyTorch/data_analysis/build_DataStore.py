@@ -118,6 +118,8 @@ class ForexDataset2(Dataset):
         inputs = inputs.reshape(-1, lookback, df.shape[1])
         labels = labels.reshape(-1, 1)
 
+        self.samples.append(inputs,labels)
+
     def __len__(self):
         return len(self.samples)
 
