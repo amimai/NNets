@@ -103,3 +103,102 @@ class GRU(nn.Module):
     def forward(self, x, h):
         out, h = self.gru(x,h)
         return out, h
+
+class lane(nn.Module):
+    def __init__(self,input_dim,hidden_dim,attn_layers,backwards,drop_prob):
+        super(lane, self).__init__()
+        self.relu = nn.LeakyReLU()
+        self.drop = nn.Dropout(p=drop_prob)
+
+        self.backwards=backwards
+        self.hidden_dim=hidden_dim
+
+        self.lin_in = nn.Linear(input_dim, hidden_dim)
+        self.attn_list = nn.ModuleList()
+        self.layernorm = nn.ModuleList()
+        for i in range(attn_layers):
+            self.attn_list.append(torch.nn.MultiheadAttention(
+                hidden_dim, 8))
+            self.layernorm.append(nn.LayerNorm(hidden_dim))
+
+    def forward(self, x):
+        bs = x.shape[0]
+        out = self.relu(self.lin_in(x))
+        out = self.drop(out)
+        out = out.transpose(0, 1)
+        for i in range(len(self.attn_list)):
+            tmp,attn = self.attn_list[i](out,out,out)
+            out = self.layernorm[i](torch.add(tmp, out))
+        out = out.transpose(0, 1)
+        out = out.reshape(bs, self.backwards * self.hidden_dim)
+        return out
+
+class lane2(nn.Module):
+    def __init__(self,input_dim,hidden_dim,attn_layers,backwards,drop_prob):
+        super(lane2, self).__init__()
+        self.relu = nn.LeakyReLU()
+        self.drop = nn.Dropout(p=drop_prob)
+
+        self.backwards=backwards
+        self.hidden_dim=hidden_dim
+
+        self.lin_in = nn.Linear(input_dim, hidden_dim)
+        self.attn_list = nn.ModuleList()
+        self.layernorm = nn.ModuleList()
+        for i in range(attn_layers):
+            self.attn_list.append(torch.nn.MultiheadAttention(
+                hidden_dim, 8))
+            self.layernorm.append(nn.LayerNorm(hidden_dim))
+
+    def forward(self, x):
+        #bs = x.shape[0]
+        out = self.relu(self.lin_in(x))
+        out = self.drop(out)
+        out = out.transpose(0, 1)
+        for i in range(len(self.attn_list)):
+            tmp,attn = self.attn_list[i](out,out,out)
+            out = self.layernorm[i](torch.add(tmp, out))
+        out = out.transpose(0, 1)
+        return out
+
+class lane_merge(nn.Module):
+    def __init__(self,hidden_dim,backwards,drop_prob):
+        super(lane_merge, self).__init__()
+        self.relu = nn.LeakyReLU()
+        self.drop = nn.Dropout(p=drop_prob)
+
+        self.backwards=backwards
+        self.hidden_dim=hidden_dim
+
+        self.attn = torch.nn.MultiheadAttention(hidden_dim, 8)
+        self.layernorm = nn.LayerNorm(hidden_dim)
+
+    def forward(self, x, y):
+        #bs = x.shape[0]
+        out,attn = self.attn(x.transpose(0, 1),y.transpose(0, 1),y.transpose(0, 1))
+        out = out.transpose(0, 1)
+        out = torch.add(torch.add(x,y),out)
+        out = self.layernorm(out)
+        return out
+
+class self_attn(nn.Module):
+    def __init__(self,hidden_dim,backwards,drop_prob):
+        super(self_attn, self).__init__()
+        self.relu = nn.LeakyReLU()
+        self.drop = nn.Dropout(p=drop_prob)
+
+        self.backwards=backwards
+        self.hidden_dim=hidden_dim
+
+        self.attn = torch.nn.MultiheadAttention(hidden_dim, 8)
+        self.layernorm = nn.LayerNorm(hidden_dim)
+
+    def forward(self, x):
+        #bs = x.shape[0]
+        #print(x.shape)
+        inx = self.drop(x).transpose(0, 1)
+        out,attn = self.attn(inx,inx,inx)
+        out = torch.add(inx, out)
+        out = out.transpose(0, 1)
+        out = self.layernorm(out)
+        return out
